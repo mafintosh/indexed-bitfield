@@ -1,7 +1,7 @@
 {
   "name": "indexed-bitfield",
   "version": "0.0.0",
-  "description": "WIP - nothing to see here",
+  "description": "A bitfield that supports .indexOf(bool) in O(log(bitfieldLength)) time",
   "main": "index.js",
   "dependencies": {
     "flat-tree": "^1.4.0",

@@ -1,6 +1,6 @@
 # indexed-bitfield
 
-A bitfield that supports `.indexOf(bool)` in O(log(bitfieldLength)) time.
+A bitfield that supports `.indexOf(bool)` in `O(log(bitfieldLength))` time.
 
 ```
 npm install indexed-bitfield

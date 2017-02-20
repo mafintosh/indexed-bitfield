@@ -6,6 +6,8 @@ A bitfield that supports fast `.indexOf(bool)` and other array like operations
 npm install indexed-bitfield
 ```
 
+[![build status](http://img.shields.io/travis/mafintosh/indexed-bitfield.svg?style=flat)](http://travis-ci.org/mafintosh/indexed-bitfield)
+
 ## Usage
 
 ``` js

@@ -1,0 +1,27 @@
+{
+  "name": "indexed-bitfield",
+  "version": "0.0.0",
+  "description": "WIP - nothing to see here",
+  "main": "index.js",
+  "dependencies": {
+    "flat-tree": "^1.4.0",
+    "sparse-bitfield": "^2.2.0"
+  },
+  "devDependencies": {
+    "standard": "^8.6.0",
+    "tape": "^4.6.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mafintosh/indexed-bitfield.git"
+  },
+  "scripts": {
+    "test": "standard && tape test.js"
+  },
+  "author": "Mathias Buus (@mafintosh)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mafintosh/indexed-bitfield/issues"
+  },
+  "homepage": "https://github.com/mafintosh/indexed-bitfield"
+}

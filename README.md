@@ -35,9 +35,9 @@ index bits  :         0
 stored bits :  0 0 0 0 0 0 0 0
 ```
 
-If an index bit is `0` then all bits in the tree below it are the same, otherwise the index bit is `1`.
+If an index bit is `0` then all child nodes have the same value, otherwise the index bit is `1`.
 
-For example this is a bitfield where bit 3 and 4 are set to `1`.
+For example this is a bitfield where the third and fourth bit are set to `1`.
 
 ```
 index bits  :         1

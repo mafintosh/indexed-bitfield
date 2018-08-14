@@ -1,22 +1,20 @@
 {
   "name": "indexed-bitfield",
-  "version": "1.0.0",
-  "description": "A bitfield that supports .indexOf(bool) in O(log(bitfieldLength)) time",
+  "version": "0.0.0",
+  "description": "Indexed bitfield that allows you to search for bits efficiently",
   "main": "index.js",
-  "dependencies": {
-    "flat-tree": "^1.4.0",
-    "sparse-bitfield": "^2.2.0"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "standard": "^8.6.0",
-    "tape": "^4.6.3"
+    "standard": "^11.0.1",
+    "tape": "^4.9.1"
+  },
+  "scripts": {
+    "test": "standard && tape test.js",
+    "bench": "node benchmark.js"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/mafintosh/indexed-bitfield.git"
-  },
-  "scripts": {
-    "test": "standard && tape test.js"
   },
   "author": "Mathias Buus (@mafintosh)",
   "license": "MIT",

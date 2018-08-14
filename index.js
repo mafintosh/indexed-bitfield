@@ -1,117 +1,157 @@
-var bitfield = require('sparse-bitfield')
-var flat = require('flat-tree')
+module.exports = size => new Bitfield(size)
 
-module.exports = SkipIndex
+const MASK = []
+for (var i = 0; i < 32; i++) MASK[i] = Math.pow(2, 31 - i) - 1
 
-function SkipIndex (opts) {
-  if (!(this instanceof SkipIndex)) return new SkipIndex(opts)
+class Bitfield {
+  constructor (size) {
+    this.buffer = new Uint32Array(Math.ceil(size / 32))
+    this.length = size
 
-  this.bitfield = bitfield(opts)
-  this._cursor = this.cursor()
-}
+    this._oneOne = [this.buffer]
+    this._allOne = [this.buffer]
 
-SkipIndex.prototype.set = function (i, value) {
-  i *= 2
-
-  var len = this.bitfield.length
-
-  if (!this.bitfield.set(i, value)) return false
-
-  var skippable = this.bitfield.get(flat.sibling(i)) === value
-  var parent = flat.parent(i)
-
-  while (skippable) {
-    if (!this.bitfield.set(parent, false)) break
-    skippable = this._skippable(flat.sibling(parent), value)
-    parent = flat.parent(parent)
+    while (true) {
+      const prev = this._allOne[this._allOne.length - 1].length
+      if (prev === 1) break
+      const len = Math.ceil(prev / 32)
+      this._oneOne.push(new Uint32Array(len))
+      this._allOne.push(new Uint32Array(len))
+    }
   }
 
-  this._notSkippable(parent)
-  if (len !== this.bitfield.length) this._expandRoots(len)
+  set (index, bit) {
+    const r = index & 31
+    const b = (index - r) / 32
+    const prev = this.buffer[b]
 
-  return true
-}
+    this.buffer[b] = bit ? (prev | (0x80000000 >>> r)) : (prev & ~(0x80000000 >>> r))
 
-SkipIndex.prototype.get = function (i) {
-  return this.bitfield.get(2 * i)
-}
+    const upd = this.buffer[b]
+    if (upd === prev) return false
 
-SkipIndex.prototype.every = function (val, start, end) {
-  if (end === 0) return false
-  if (!end) end = this.bitfield.length
+    this._updateAllOne(b, upd)
+    this._updateOneOne(b, upd)
 
-  var i = this.indexOf(!val, start)
-  if (i === -1) i = this.bitfield.length
-  return i >= end
-}
+    return true
+  }
 
-SkipIndex.prototype.some = function (val, start, end) {
-  return !this.every(!val, start, end)
-}
+  get (index) {
+    const r = index & 31
+    const b = (index - r) / 32
 
-SkipIndex.prototype.indexOf = function (value, offset) {
-  return this._cursor.seek(offset || 0).next(value)
-}
+    return (this.buffer[b] & (0x80000000 >>> r)) !== 0
+  }
 
-SkipIndex.prototype.cursor = function () {
-  return new Cursor(this)
-}
+  iterator () {
+    return new Iterator(this)
+  }
 
-SkipIndex.prototype._expandRoots = function (length) {
-  var roots = flat.fullRoots(length)
-  for (var i = 0; i < roots.length; i++) {
-    if (this._skippable(roots[i], true)) this._notSkippable(flat.parent(roots[i]))
+  _updateAllOne (b, upd) {
+    for (var i = 1; i < this._allOne.length; i++) {
+      const buf = this._allOne[i]
+      const r = b & 31
+      b = (b - r) / 32
+      const prev = buf[b]
+      buf[b] = upd === 0xffffffff ? (prev | (0x80000000 >>> r)) : (prev & ~(0x80000000 >>> r))
+      upd = buf[b]
+      if (upd === prev) break
+    }
+  }
+
+  _updateOneOne (b, upd) {
+    for (var i = 1; i < this._oneOne.length; i++) {
+      const buf = this._oneOne[i]
+      const r = b & 31
+      b = (b - r) / 32
+      const prev = buf[b]
+      buf[b] = upd !== 0 ? (prev | (0x80000000 >>> r)) : (prev & ~(0x80000000 >>> r))
+      upd = buf[b]
+      if (upd === prev) break
+    }
   }
 }
 
-SkipIndex.prototype._notSkippable = function (tree) {
-  while ((tree < this.bitfield.length || flat.leftSpan(tree)) && this.bitfield.set(tree, true)) {
-    tree = flat.parent(tree)
+class Iterator {
+  constructor (bitfield) {
+    this.index = 0
+    this.length = bitfield.length
+    this._oneOne = bitfield._oneOne
+    this._allOne = bitfield._allOne
   }
-}
 
-SkipIndex.prototype._skippable = function (tree, skipValue) {
-  // tree should be an odd number (parent)
-  if (tree >= this.bitfield.length) return false
-  if (this.bitfield.get(tree)) return false
-  return this.bitfield.get(flat.leftSpan(tree)) === skipValue
-}
+  next (bit) {
+    return bit ? this.nextTrue() : this.nextFalse()
+  }
 
-function Cursor (index) {
-  this.index = index
-  this.offset = 0
-}
+  seek (index) {
+    this.index = index
+    return this
+  }
 
-Cursor.prototype.nextTrue = function () {
-  return this.next(true)
-}
+  random (bit) {
+    const index = this.index
+    const i = this.seek(index + Math.floor(Math.random() * (this.length - index))).next(bit)
+    return i === -1 ? this.seek(index).next(bit) : i
+  }
 
-Cursor.prototype.nextFalse = function () {
-  return this.next(false)
-}
+  nextTrue () {
+    if (this.index >= this.length) return -1
 
-Cursor.prototype.seek = function (pos) {
-  this.offset = 2 * pos
-  return this
-}
+    var r = this.index & 31
+    var b = (this.index - r) / 32
+    var mask = 0xffffffff >>> r
 
-Cursor.prototype.next = function (value) {
-  while (true) {
-    if (this.offset >= this.index.bitfield.length) return -1
-
-    if (this.index.bitfield.get(this.offset) === value) {
-      this.offset += 2
-      return (this.offset - 2) / 2
+    for (var i = 0; i < this._oneOne.length; i++) {
+      const clz = Math.clz32(this._oneOne[i][b] & mask)
+      if (clz !== 32) return this._downLeftTrue(i, b, clz)
+      r = b & 31
+      b = (b - r) / 32
+      mask = MASK[r]
     }
 
-    var skip = this.offset
-    var parent = flat.parent(skip)
+    return -1
+  }
 
-    while (this.index._skippable(parent, !value)) {
-      skip = parent
-      parent = flat.parent(skip)
+  nextFalse () {
+    if (this.index >= this.length) return -1
+
+    var r = this.index & 31
+    var b = (this.index - r) / 32
+    var mask = 0xffffffff >>> r
+
+    for (var i = 0; i < this._allOne.length; i++) {
+      const clz = Math.clz32((~this._allOne[i][b]) & mask)
+      if (clz !== 32) return this._downLeftFalse(i, b, clz)
+      r = b & 31
+      b = (b - r) / 32
+      mask = MASK[r]
     }
 
-    this.offset = flat.rightSpan(skip) + 2
+    return -1
+  }
+
+  _downLeftFalse (i, b, clz) {
+    while (i) {
+      b = b * 32 + clz
+      clz = Math.clz32(~this._allOne[--i][b])
+    }
+
+    b = b * 32 + clz
+    if (b >= this.length) return -1
+
+    this.index = b + 1
+    return b
+  }
+
+  _downLeftTrue (i, b, clz) {
+    while (i) {
+      b = b * 32 + clz
+      clz = Math.clz32(this._oneOne[--i][b])
+    }
+
+    b = b * 32 + clz
+    this.index = b + 1
+    return b
   }
 }

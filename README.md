@@ -1,92 +1,97 @@
 # indexed-bitfield
 
-A bitfield that supports `.indexOf(bool)` in `O(log(bitfieldLength))` time.
+Indexed bitfield that allows you to search for bits efficiently
 
 ```
 npm install indexed-bitfield
 ```
 
-[![build status](http://img.shields.io/travis/mafintosh/indexed-bitfield.svg?style=flat)](http://travis-ci.org/mafintosh/indexed-bitfield)
-
 ## Usage
 
 ``` js
-var bitfield = require('indexed-bitfield')
-var bits = bitfield()
+const bitfield = require('indexed-bitfield')
 
+// allocate a bitfield with one billion bits
+const bits = bitfield(1e9)
+
+// set bit number one million to true
 bits.set(1000000, true)
-bits.set(5000000, true)
 
-console.log(bits.indexOf(false)) // returns  0
-console.log(bits.indexOf(true)) // returns 1000000
-console.log(bits.indexOf(true, 1000001)) // returns 5000000
-console.log(bits.indexOf(true, 5000001)) // returns -1
-```
+// returns true
+console.log(bits.get(10000000))
 
-The `indexOf` operator runs in `O(log(bitfieldLength))`.
+const ite = bits.iterator()
 
-For every bit stored the indexed bitfield uses another bit to index this value.
-The index looks like this
+// returns 10000000
+console.log(ite.next(true))
 
-```
-index bits  :         0
-            :     0       0
-            :   0   0   0   0
-stored bits :  0 0 0 0 0 0 0 0
-```
-
-If an index bit is `0` then all child nodes have the same value, otherwise the index bit is `1`.
-
-For example this is a bitfield where the third and fourth bit are set to `1`.
-
-```
-index bits  :         1
-            :     1       0
-            :   0   0   0   0
-stored bits :  0 0 1 1 0 0 0 0
+// returns -1 (no more true bits)
+console.log(ite.next(true))
 ```
 
 ## API
 
-#### `var bits = bitfield([options])`
+#### `bits = bitfield(maxBits)`
 
-Create a new indexed bitfield. Options are forwarded to the [sparse-bitfield](https://github.com/mafintosh/sparse-bitfield) constructor.
+Make a new bitfield. Can contain at max `maxBits` bits.
 
-#### `bits.bitfield`
+Will in total use `32/248 * maxBits` bytes of memory (so indexing 1.000.000 bits take up roughly 100kb of memory).
 
-A [sparse-bitfield](https://github.com/mafintosh/sparse-bitfield) instance that will store the bits and index.
+#### `updated = bits.set(index, bit)`
 
-#### `var updated = bits.set(index, bool)`
+Set an index to `true` or `false`. Returns `true` if the underlying bit was flipped
+and `false` if it was already set to `bit`.
 
-Update a value in the bitfield. `updated` will be set to `true` if the bitfield was updated and `false` if `index` was already set to `bool`.
+This operation runs in `O(log32(bitfield.length))` time worst case but often in `O(1)`.
 
-Runs in `O(log(bitfieldLength))` time.
 
-#### `var bool = bits.get(index)`
+#### `bit = bits.get(index)`
 
-Get a value from the bitfield.
+Get the bit at index.
 
-Runs in `O(1)` time.
+This operation runs in `O(1)`.
 
-#### `var index = bits.indexOf(bool, [offset])`
+#### `bits.length`
 
-Find a value in the bitfield.
+The length (or max amount of bits) of the bitfield.
 
-Returns `-1` if it could not be found. Optionally you can set `offset` to the index you wanna start searching at.
+#### `iterator = bits.iterator()`
 
-Runs in `O(log(bitfieldLength))` time.
+Create a bit iterator.
 
-#### `var bool = bits.every(bool, start, end)`
+#### `index = iterator.next(bit)`
 
-Check if a range in the bitfield only contains a specific bool.
+Return the next index `bit` is stored at.
+If none found `-1` is returned.
 
-Runs in `O(log(bitfieldLength))` time.
+This operation runs in `O(log32(bitfield.length))` time.
 
-#### `var bool = bits.some(bool, start, end)`
+#### `iterator.seek(index)`
 
-Check if a range in the bitfield contains at least one specific bool.
+Move the iterator to a specific index.
 
-Runs in `O(log(bitfieldLength))` time.
+This operation runs in `O(1)` time.
+
+#### `iterator.random(bit)`
+
+Returns the position of a random bit of value `bit` (after the current `seek` index)
+
+## Performance
+
+The bitfield index works by using `Math.clz32` to count how many leading zeros bytes per 32 bit integer
+and builds a bit search tree using that. The tree is very compact as it only needs one bit of index
+per 32 bits of data per level in the tree. This also makes all search operation runs in log32 time.
+
+There is a benchmark included that searches for a single true bit in a 100.000.000 length bitfield.
+
+On my machine (Dell XPS) it returns the following: (YMVV)
+
+```
+npm run bench
+30211 searches/ms
+```
+
+(or roughly 3.000.000 searches per second)
 
 ## License
 

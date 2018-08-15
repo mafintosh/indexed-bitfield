@@ -1,6 +1,6 @@
 {
   "name": "indexed-bitfield",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Indexed bitfield that allows you to search for bits efficiently",
   "main": "index.js",
   "dependencies": {},

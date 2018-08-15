@@ -20,20 +20,21 @@ class Bitfield {
       this._oneOne.push(new Uint32Array(len))
       this._allOne.push(new Uint32Array(len))
     }
+
+    // flipping unused bits to true makes to algos much easier
+    // and faster in the case that len !== 32 ** n
+
+    if (this._allOne.length > 1) {
+      setUnused(this._allOne[1], this._allOne[0].length)
+    }
+    if (this.length & 31) {
+      setUnused(this._allOne[0], this.length)
+    }
   }
 
   every (bit) {
     if (!bit) return this._oneOne[this._oneOne.length - 1][0] === 0
-
-    var b = 0
-    var i = this._allOne.length - 1
-
-    while (i) {
-      b = b * 32 + Math.clz32(~this._allOne[i--][b])
-    }
-
-    if (b >= this.buffer.length) return true
-    return b * 32 + Math.clz32(~this._allOne[0][b]) >= this.length
+    return this._allOne[this._allOne.length - 1][0] === 0xffffffff
   }
 
   some (bit) {
@@ -158,8 +159,6 @@ class Iterator {
     }
 
     b = b * 32 + clz
-    if (b >= this.length) return -1
-
     this.index = b + 1
     return b
   }
@@ -174,4 +173,9 @@ class Iterator {
     this.index = b + 1
     return b
   }
+}
+
+function setUnused (lvl, prevLength) {
+  const extraBits = (32 * lvl.length) - prevLength
+  lvl[lvl.length - 1] |= MASK[31 - extraBits]
 }

@@ -59,13 +59,13 @@ The length (or max amount of bits) of the bitfield.
 
 Returns true if the bitfield contains at least one `bit`.
 
-This operation runs in `O(log32(n))`
+This operation runs in `O(1)`
 
 #### `boot = bits.every(bit)`
 
 Returns true if all bits in the bitfield are set to `bit`.
 
-This operation runs in `O(log32(n))`
+This operation runs in `O(1)`
 
 #### `iterator = bits.iterator()`
 

@@ -55,6 +55,18 @@ This operation runs in `O(1)`.
 
 The length (or max amount of bits) of the bitfield.
 
+#### `bool = bits.some(bit)`
+
+Returns true if the bitfield contains at least one `bit`.
+
+This operation runs in `O(log32(n))`
+
+#### `boot = bits.every(bit)`
+
+Returns true if all bits in the bitfield are set to `bit`.
+
+This operation runs in `O(log32(n))`
+
 #### `iterator = bits.iterator()`
 
 Create a bit iterator.
@@ -91,7 +103,7 @@ npm run bench
 30211 searches/ms
 ```
 
-(or roughly 3.000.000 searches per second)
+(or roughly 30.000.000 searches per second)
 
 ## License
 

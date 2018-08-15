@@ -5,6 +5,8 @@ for (var i = 0; i < 32; i++) MASK[i] = Math.pow(2, 31 - i) - 1
 
 class Bitfield {
   constructor (size) {
+    if (!(size > 0)) throw new Error('Size must be > 0')
+
     this.buffer = new Uint32Array(Math.ceil(size / 32))
     this.length = size
 
@@ -18,6 +20,30 @@ class Bitfield {
       this._oneOne.push(new Uint32Array(len))
       this._allOne.push(new Uint32Array(len))
     }
+
+    const bits = this.length < 32
+      ? this.length
+      : this._oneOne[this._oneOne.length - 2].length
+
+    this._topOne = leadingOnes(bits)
+  }
+
+  every (bit) {
+    if (!bit) return this._oneOne[this._oneOne.length - 1][0] === 0
+
+    var b = 0
+    var i = this._allOne.length - 1
+
+    while (i) {
+      b = b * 32 + Math.clz32(~this._allOne[i--][b])
+    }
+
+    if (b >= this.buffer.length) return true
+    return b * 32 + Math.clz32(~this._allOne[0][b]) >= this.length
+  }
+
+  some (bit) {
+    return !this.every(!bit)
   }
 
   set (index, bit) {
@@ -154,4 +180,9 @@ class Iterator {
     this.index = b + 1
     return b
   }
+}
+
+function leadingOnes (bits) {
+  bits = 32 - bits
+  return ((0xffffffff >>> bits) << bits) >>> 0
 }

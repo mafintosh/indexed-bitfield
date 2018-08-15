@@ -83,3 +83,41 @@ tape('random bits (false)', function (t) {
 
   t.end()
 })
+
+tape('some + every', function (t) {
+  const bits = bitfield(1000)
+
+  t.ok(bits.some(false))
+  t.ok(bits.every(false))
+  t.notOk(bits.some(true))
+  t.notOk(bits.every(true))
+
+  for (var i = 0; i < 10; i++) {
+    bits.set(bits.iterator().random(false), true)
+
+    t.ok(bits.some(false))
+    t.notOk(bits.every(false))
+    t.ok(bits.some(true))
+    t.notOk(bits.every(true))
+  }
+
+  for (var j = 0; j < bits.length; j++) {
+    bits.set(j, true)
+  }
+
+  t.notOk(bits.some(false))
+  t.notOk(bits.every(false))
+  t.ok(bits.some(true))
+  t.ok(bits.every(true))
+
+  for (var k = 0; k < 10; k++) {
+    bits.set(bits.iterator().random(true), false)
+
+    t.ok(bits.some(false))
+    t.notOk(bits.every(false))
+    t.ok(bits.some(true))
+    t.notOk(bits.every(true))
+  }
+
+  t.end()
+})

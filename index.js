@@ -20,12 +20,6 @@ class Bitfield {
       this._oneOne.push(new Uint32Array(len))
       this._allOne.push(new Uint32Array(len))
     }
-
-    const bits = this.length < 32
-      ? this.length
-      : this._oneOne[this._oneOne.length - 2].length
-
-    this._topOne = leadingOnes(bits)
   }
 
   every (bit) {
@@ -180,9 +174,4 @@ class Iterator {
     this.index = b + 1
     return b
   }
-}
-
-function leadingOnes (bits) {
-  bits = 32 - bits
-  return ((0xffffffff >>> bits) << bits) >>> 0
 }
